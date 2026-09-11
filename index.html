@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MY CAFÉ — Demo POS</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: Arial, sans-serif; background: #f7f3ee; color: #3b302a;
+    min-height: 100vh; display:flex; align-items:center; justify-content:center;
+  }
+  .app { width:min(920px, 94vw); min-height:620px; background:#fffaf5; border-radius:28px;
+         box-shadow:0 12px 40px rgba(70,45,30,.14); padding:38px; }
+  h1 { text-align:center; margin:0 0 28px; letter-spacing:2px; }
+  .home { min-height:540px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+  .order-btn, .pay-btn, .back-btn {
+    border:0; border-radius:20px; cursor:pointer; transition:.15s;
+    font-weight:700;
+  }
+  .order-btn { padding:28px 90px; font-size:30px; background:#86c58a; color:white; }
+  .order-btn:active, .product:active, .pay-btn:active { transform:scale(.95); }
+  .products { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .product { border:0; background:#fff; border-radius:20px; padding:22px 10px; cursor:pointer;
+             box-shadow:0 5px 16px rgba(70,45,30,.10); transition:.15s; color:#3b302a; }
+  .product:hover { transform:translateY(-3px); }
+  .icon { font-size:42px; display:block; margin-bottom:10px; }
+  .name { font-size:18px; font-weight:700; display:block; }
+  .price { margin-top:7px; color:#8a6654; }
+  .summary { margin-top:28px; background:#fff; border-radius:20px; padding:20px; }
+  .row { display:flex; justify-content:space-between; padding:7px 0; }
+  .total { border-top:1px solid #ddd; margin-top:10px; padding-top:14px; font-size:22px; font-weight:700; }
+  .actions { display:flex; justify-content:space-between; align-items:center; margin-top:20px; }
+  .back-btn { padding:12px 20px; background:#eee5dc; color:#59483d; }
+  .pay-btn { padding:16px 30px; background:#5d9f9a; color:#fff; font-size:17px; }
+  .empty { text-align:center; color:#927f72; padding:10px; }
+  .message { text-align:center; margin-top:14px; font-weight:700; color:#5d9f9a; }
+  @media(max-width:700px){ .products{grid-template-columns:repeat(2,1fr)} .app{padding:24px} }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+const products = [
+  {id:'latte', name:'Latte', icon:'☕', price:80},
+  {id:'matcha', name:'Matcha', icon:'🍵', price:90},
+  {id:'bread', name:'Bread', icon:'🥐', price:50},
+  {id:'cake', name:'Cake', icon:'🍰', price:100}
+];
+let cart = {};
+
+function home() {
+  document.getElementById('app').innerHTML = `
+    <div class="home">
+      <h1>MY CAFÉ</h1>
+      <button class="order-btn" onclick="menu()">🛒 ORDER</button>
+    </div>`;
+}
+
+function menu() {
+  document.getElementById('app').innerHTML = `
+    <h1>MY CAFÉ</h1>
+    <div class="products">
+      ${products.map(p => `
+        <button class="product" onclick="add('${p.id}')">
+          <span class="icon">${p.icon}</span>
+          <span class="name">${p.name}</span>
+          <span class="price">฿${p.price}</span>
+        </button>`).join('')}
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="actions">
+      <button class="back-btn" onclick="home()">← HOME</button>
+      <button class="pay-btn" onclick="payment()">PAYMENT</button>
+    </div>
+    <div class="message" id="message"></div>`;
+  renderCart();
+}
+
+function add(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  renderCart();
+}
+
+function renderCart() {
+  const summary = document.getElementById('summary');
+  if (!summary) return;
+  const items = products.filter(p => cart[p.id]);
+  if (!items.length) {
+    summary.innerHTML = '<div class="empty">ยังไม่มีสินค้า — กดสินค้าด้านบนเพื่อเพิ่มลงออเดอร์</div>';
+    return;
+  }
+  let total = 0;
+  const rows = items.map(p => {
+    const qty = cart[p.id], subtotal = qty * p.price; total += subtotal;
+    return `<div class="row"><span>${p.icon} ${p.name} × ${qty}</span><span>฿${subtotal}</span></div>`;
+  }).join('');
+  summary.innerHTML = `${rows}<div class="row total"><span>TOTAL</span><span>฿${total}</span></div>`;
+}
+
+function payment() {
+  const items = products.filter(p => cart[p.id]);
+  const total = items.reduce((s,p) => s + p.price * cart[p.id], 0);
+  if (!total) {
+    document.getElementById('message').textContent = 'กรุณาเลือกสินค้าอย่างน้อย 1 รายการ';
+    return;
+  }
+  document.getElementById('app').innerHTML = `
+    <div class="home">
+      <h1>PAYMENT</h1>
+      <p style="font-size:26px">TOTAL: <b>฿${total}</b></p>
+      <button class="pay-btn" onclick="completeOrder()">✓ COMPLETE ORDER</button>
+      <button class="back-btn" style="margin-top:14px" onclick="menu()">← BACK</button>
+    </div>`;
+}
+
+function completeOrder() {
+  cart = {};
+  document.getElementById('app').innerHTML = `
+    <div class="home">
+      <div style="font-size:70px">☕✨</div>
+      <h1>ORDER COMPLETE!</h1>
+      <p>ขอบคุณค่ะ 💛</p>
+      <button class="order-btn" style="font-size:20px;padding:18px 38px" onclick="home()">NEW ORDER</button>
+    </div>`;
+}
+home();
+</script>
+</body>
+</html>
